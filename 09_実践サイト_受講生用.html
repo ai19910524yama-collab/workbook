@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>“売れる強み”実装プログラム｜実践ワークブック</title>
+<!--
+  ============================================================
+  受講生用 実践ワークブック（MVP）
+  ------------------------------------------------------------
+  ・このファイル1枚で動きます（サーバー・ネット接続・ログイン不要）
+  ・データはこのブラウザの localStorage に自動保存されます
+  ・「データ」タブから JSON の書き出し／読み込みができます
+  ・講師への提出は「提出用テキストをコピー」または JSON ファイル送付
+  ・初期状態は空。動作確認用のダミーデータは「データ」タブから読込
+  ・週報タブ: 毎週日曜23:59締切。提出→コピーしてチャットへ（講師はJSON取込で確認）
+  ・日報タブ: 任意。コピーしてグループチャットに投稿して全員で共有する運用
+  ・改修する人へ: データ構造は 12_開発引き継ぎ資料.md を参照。
+    STEP定義は下の STEPS 配列。講師用管理画面(10_講師用管理画面.html)の
+    STEP定義と必ず一致させること（schemaVersion で互換性を管理）
+  ============================================================
+-->
+<style>
+  :root{
+    --navy:#1f3b57; --rose:#b05a6e; --gold:#c89a5b; --green:#5b8c5a;
+    --bg:#faf5ef; --card:#ffffff; --line:#e8ddd2; --text:#3a3a3a; --muted:#8a8378;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Hiragino Kaku Gothic ProN","Yu Gothic","Meiryo",sans-serif; background:var(--bg); color:var(--text); font-size:14px; line-height:1.7;}
+  header{background:var(--navy); color:#fff; padding:14px 20px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; justify-content:space-between;}
+  header h1{font-size:16px; font-weight:700;}
+  header .sub{font-size:11px; opacity:.75;}
+  #studentName{background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.3); color:#fff; border-radius:6px; padding:4px 10px; font-size:13px; width:180px;}
+  #studentName::placeholder{color:rgba(255,255,255,.55);}
+  nav{display:flex; flex-wrap:wrap; gap:4px; padding:10px 16px; background:#fff; border-bottom:1px solid var(--line); position:sticky; top:0; z-index:5;}
+  nav button{border:1px solid var(--line); background:#fff; color:var(--text); padding:7px 14px; border-radius:20px; cursor:pointer; font-size:13px;}
+  nav button.active{background:var(--navy); color:#fff; border-color:var(--navy);}
+  main{max-width:860px; margin:0 auto; padding:20px 16px 80px;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:14px;}
+  h2{font-size:17px; color:var(--navy); margin-bottom:10px;}
+  h3{font-size:14px; color:var(--navy); margin:14px 0 6px;}
+  .muted{color:var(--muted); font-size:12px;}
+  .phase-title{font-size:13px; font-weight:700; color:var(--rose); margin:18px 0 8px; letter-spacing:.05em;}
+  .step-row{display:flex; align-items:center; gap:10px; padding:12px 14px; background:#fff; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; cursor:pointer;}
+  .step-row:hover{border-color:var(--gold);}
+  .step-no{font-weight:700; color:var(--gold); min-width:56px; font-size:12px;}
+  .step-t{flex:1;}
+  .chip{font-size:11px; padding:2px 10px; border-radius:12px; white-space:nowrap;}
+  .st-todo{background:#eee; color:#777;}
+  .st-wip{background:#f6e7cf; color:#8a6320;}
+  .st-done{background:#e2eede; color:#3c6b3b;}
+  .st-stuck{background:#f3dde2; color:#a04358;}
+  .bar{height:8px; background:#eee; border-radius:4px; overflow:hidden;}
+  .bar>span{display:block; height:100%; background:linear-gradient(90deg,var(--gold),var(--rose));}
+  label{display:block; font-weight:700; font-size:13px; margin:12px 0 4px; color:var(--navy);}
+  textarea,input[type=text],input[type=date],select{width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 10px; font-size:14px; font-family:inherit; background:#fffdf9;}
+  textarea{min-height:84px; resize:vertical;}
+  textarea:focus,input:focus,select:focus{outline:2px solid var(--gold);}
+  .btn{display:inline-block; border:none; border-radius:8px; padding:9px 16px; font-size:13px; cursor:pointer; background:var(--navy); color:#fff;}
+  .btn.sec{background:#fff; color:var(--navy); border:1px solid var(--navy);}
+  .btn.warn{background:#fff; color:var(--rose); border:1px solid var(--rose);}
+  .btn.gold{background:var(--gold);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .goalbox{background:#f7f1e8; border-left:4px solid var(--gold); padding:10px 12px; border-radius:0 8px 8px 0; font-size:13px; margin-bottom:6px;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{border:1px solid var(--line); padding:8px; text-align:left; vertical-align:top;}
+  th{background:#f4ede4; color:var(--navy); font-size:12px;}
+  .sheet-sec{border-bottom:1px dashed var(--line); padding:12px 0;}
+  .sheet-sec h4{color:var(--rose); font-size:13px; margin-bottom:4px;}
+  .sheet-val{white-space:pre-wrap;}
+  .empty{color:#bbb;}
+  .notice{background:#fdf6e3; border:1px solid #f0e0b8; border-radius:8px; padding:10px 12px; font-size:12px; margin-bottom:12px;}
+  footer{max-width:860px; margin:0 auto; padding:0 16px 40px; font-size:11px; color:var(--muted);}
+  @media print{
+    header,nav,.no-print,footer{display:none !important;}
+    body{background:#fff;}
+    main{max-width:100%; padding:0;}
+    .card{border:none; padding:0;}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>“売れる強み”実装ワークブック</h1>
+    <div class="sub">見つけた強みを、選ばれる商品に。（第1期）</div>
+  </div>
+  <div class="row no-print">
+    <input type="text" id="studentName" placeholder="お名前（必ず入力）">
+    <span class="sub" id="saveState">自動保存: ON</span>
+  </div>
+</header>
+
+<nav class="no-print" id="nav"></nav>
+<main id="main"></main>
+<footer>データはこの端末のブラウザ内にのみ保存されます。機種変更・ブラウザ変更の前に「データ」タブからJSONを書き出して保管してください。</footer>
+
+<script>
+"use strict";
+/* ================= 定義（講師用管理画面と一致させること） ================= */
+const SCHEMA_VERSION = 1;
+const APP_ID = "urerutsuyomi-workbook";
+const WB_KEY = "uw_workbook_v1"; // localStorage キー
+
+const PHASES = [
+  {id:"p1", name:"フェーズ1: 土台（週1〜4）", steps:["s1","s2","s3","s4"]},
+  {id:"p2", name:"フェーズ2: 商品化（週5〜8）", steps:["s5","s6"]},
+  {id:"p3", name:"フェーズ3: 導線（週9〜12）", steps:["s7","s8","s9","s10"]},
+  {id:"p4", name:"フェーズ4: 実践・検証（週13〜16）", steps:["s11","s12"]},
+];
+const STEPS = [
+ {id:"s1", no:"STEP 1", title:"売れる強み（1文と一言肩書き）", goal:"無料セッションで見つけた強みを、講座の土台として確定させる",
+  done:"自分で口に出して違和感がない1文と肩書きになっている",
+  fields:[
+   {k:"bun", l:"あなたの“売れる強み”（1文）", t:"ta", ph:"私は、（誰）が（悩み→理想）へ進むのを、（才能の力）×（経験）で支援できます"},
+   {k:"katagaki", l:"一言肩書き（「何のコーチ？」への答え）", t:"tx", ph:"例）働き方迷子専門カウンセラー"},
+   {k:"sign", l:"才能のサイン（つい、やってしまうこと）", t:"ta", ph:"箇条書きでOK"},
+   {k:"keiken", l:"強みを裏づける経験（証拠）", t:"ta", ph:"数字・年数・エピソード"},
+   {k:"uri", l:"短所→“売り”の言葉", t:"ta", ph:"例）心配性 → 不安を先回りしてほどく設計力"}]},
+ {id:"s2", no:"STEP 2", title:"ターゲットとペルソナ", goal:"「誰の・どんな悩みを・どこまで」を決める",
+  done:"ペルソナ（具体的な一人）が目に浮かぶ状態",
+  fields:[
+   {k:"dare", l:"誰を助ける？（対象）", t:"ta", ph:"例）30代・会社員・起業準備中の女性"},
+   {k:"nayami", l:"その人のいちばんの悩み", t:"ta", ph:"本人の言葉で書く"},
+   {k:"risou", l:"どこまで連れて行く？（理想の状態）", t:"ta", ph:""},
+   {k:"persona", l:"ペルソナ（実在しそうな一人の物語）", t:"ta", ph:"名前・年齢・状況・口ぐせ"}]},
+ {id:"s3", no:"STEP 3", title:"ポジショニング", goal:"同業との「違い」を言葉にする",
+  done:"「◯◯さんは他と何が違うの？」に答えられる",
+  fields:[
+   {k:"dougyou", l:"同業はどう見えている？", t:"ta", ph:"お客様から見た同業の印象"},
+   {k:"chigai", l:"自分の違い（強み1文とつなげて）", t:"ta", ph:""},
+   {k:"riyuu", l:"選ばれる理由 3つ", t:"ta", ph:"才能×経験の証拠で3つ"}]},
+ {id:"s4", no:"STEP 4", title:"コンセプト", goal:"「誰を・どこへ・どうやって」を1文に統合する",
+  done:"コンセプト1文が完成し、STEP1〜3と矛盾がない",
+  fields:[{k:"concept", l:"コンセプト（1文）", t:"ta", ph:"（誰）を（どこ）へ、（どうやって）連れて行く"}]},
+ {id:"s5", no:"STEP 5", title:"商品設計", goal:"売る商品の中身を決める",
+  done:"人に説明できる商品設計シートになっている",
+  fields:[
+   {k:"mei", l:"商品名（仮でOK）", t:"tx", ph:""},
+   {k:"goal", l:"お客様のゴール（この商品でどうなる？）", t:"ta", ph:""},
+   {k:"naiyou", l:"内容・回数・期間", t:"ta", ph:"例）60分×6回・3か月・Zoom"},
+   {k:"kakaku", l:"価格（と、その理由）", t:"ta", ph:""},
+   {k:"keishiki", l:"提供形式・サポート範囲", t:"ta", ph:""}]},
+ {id:"s6", no:"STEP 6", title:"プロフィールとキャッチコピー", goal:"発信と相談で使う「実物」を作る",
+  done:"SNS等のプロフィールを実際に更新した",
+  fields:[
+   {k:"profile", l:"プロフィール文", t:"ta", ph:"強み1文＋経験の証拠＋人柄"},
+   {k:"copy", l:"キャッチコピー", t:"ta", ph:"問いかけ型／ビフォーアフター型／宣言型"},
+   {k:"hansei", l:"どこに反映した？", t:"tx", ph:"例）Instagramプロフィール 7/30更新"}]},
+ {id:"s7", no:"STEP 7", title:"発信の軸", goal:"迷わず発信できる「3本柱」を持つ",
+  done:"投稿タイトル5本が書けて、2本以上公開した",
+  fields:[
+   {k:"hashira", l:"発信テーマ 3本柱", t:"ta", ph:"①悩みへの共感 ②強みの視点 ③人柄・日常"},
+   {k:"pf", l:"主な発信場所", t:"tx", ph:"例）Instagram＋公式LINE"},
+   {k:"post5", l:"投稿タイトル 5本", t:"ta", ph:"箇条書き"},
+   {k:"koukai", l:"公開した投稿（URL や 日付）", t:"ta", ph:""}]},
+ {id:"s8", no:"STEP 8", title:"集客導線", goal:"「知ってもらう→申し込まれる」の流れを図にする",
+  done:"導線が1本の流れで説明でき、詰まりの仮説が言える",
+  fields:[
+   {k:"dousen", l:"導線（知る→興味→申込の流れ）", t:"ta", ph:"例）Instagram→公式LINE→体験セッション"},
+   {k:"keiro", l:"最初の見込み客はどこから？", t:"ta", ph:"知人・紹介・SNS・既存のつながり"}]},
+ {id:"s9", no:"STEP 9", title:"体験セッションの設計", goal:"自分版の「無料相談の型」を作る",
+  done:"進行表ができ、ロールプレイを1回やった",
+  fields:[
+   {k:"shinkou", l:"進行の流れ（時間割）", t:"ta", ph:"例）現状10分→ワーク30分→まとめ10分→（許可を得て）案内"},
+   {k:"kiku", l:"必ず聞くこと", t:"ta", ph:""},
+   {k:"annai", l:"商品案内の言葉（許可の取り方も）", t:"ta", ph:"「よければ続きのサポートをご案内してもいいですか？」"}]},
+ {id:"s10", no:"STEP 10", title:"モニター募集", goal:"実践相手を集める募集を「世に出す」",
+  done:"募集文を実際に公開・送付した",
+  fields:[
+   {k:"bun", l:"モニター募集文", t:"ta", ph:""},
+   {k:"saki", l:"どこに出す？（出した？）", t:"ta", ph:"例）Instagram、知人5名にDM"},
+   {k:"teiin", l:"募集人数と期限", t:"tx", ph:"例）3名・8/31まで"}]},
+ {id:"s11", no:"STEP 11", title:"実践（体験セッション実施）", goal:"実際にやって、市場の反応を得る",
+  done:"体験セッション等を3件実施（最低1件）し、実践ログに記録した",
+  fields:[{k:"mokuhyou", l:"実践目標（何を・何件・いつまでに）", t:"ta", ph:"例）体験セッション3件を週15までに"}]},
+ {id:"s12", no:"STEP 12", title:"検証と改善", goal:"反応をもとに強み・商品・発信を磨く",
+  done:"顧客の声を1件以上得て、改善レポートを書いた",
+  fields:[
+   {k:"koe", l:"顧客の声（そのままの言葉で）", t:"ta", ph:""},
+   {k:"kizuki", l:"やってみて分かったこと", t:"ta", ph:"良かった点／詰まった点"},
+   {k:"kaizen", l:"改善すること（強み1文・商品・発信のどこを直す？）", t:"ta", ph:""},
+   {k:"next90", l:"卒業後90日の計画", t:"ta", ph:""}]},
+];
+const STATUSES = [
+  {v:"todo", label:"未着手", cls:"st-todo"},
+  {v:"wip", label:"作成中", cls:"st-wip"},
+  {v:"done", label:"完了", cls:"st-done"},
+  {v:"stuck", label:"困っている", cls:"st-stuck"},
+];
+
+/* ================= データ ================= */
+function emptyData(){
+  const steps = {};
+  STEPS.forEach(s=>{ steps[s.id] = {status:"todo", fields:{}, memo:"", updatedAt:null}; });
+  return {schemaVersion:SCHEMA_VERSION, app:APP_ID,
+    student:{name:"", cohort:"第1期", startDate:""},
+    steps, practice:[], weekly:[], daily:[], exportedAt:null};
+}
+let data = load();
+function load(){
+  try{
+    const raw = localStorage.getItem(WB_KEY);
+    if(!raw) return emptyData();
+    const d = JSON.parse(raw);
+    if(d.app !== APP_ID) return emptyData();
+    const base = emptyData(); // 欠けている項目を補完（後方互換）
+    d.steps = Object.assign(base.steps, d.steps||{});
+    return Object.assign(base, d);
+  }catch(e){ console.warn("load失敗", e); return emptyData(); }
+}
+let saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(()=>{
+    try{
+      localStorage.setItem(WB_KEY, JSON.stringify(data));
+      flash("保存しました");
+    }catch(e){ alert("保存に失敗しました。データタブからJSONを書き出して保管してください。"); }
+  }, 400);
+}
+function flash(msg){
+  const el = document.getElementById("saveState");
+  el.textContent = msg;
+  setTimeout(()=>{ el.textContent = "自動保存: ON"; }, 1500);
+}
+function touch(stepId){ data.steps[stepId].updatedAt = new Date().toISOString(); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function fmtDate(iso){ if(!iso) return "—"; const d=new Date(iso); return (d.getMonth()+1)+"/"+d.getDate(); }
+
+/* ================= 進捗計算 ================= */
+function stepStatus(id){ return (data.steps[id]||{}).status || "todo"; }
+function phaseProgress(ph){
+  const done = ph.steps.filter(id=>stepStatus(id)==="done").length;
+  return Math.round(done/ph.steps.length*100);
+}
+function overallProgress(){
+  const done = STEPS.filter(s=>stepStatus(s.id)==="done").length;
+  return Math.round(done/STEPS.length*100);
+}
+
+/* ================= 画面 ================= */
+const TABS = [
+  {id:"home", label:"ホーム"},
+  {id:"work", label:"ワーク（STEP）"},
+  {id:"practice", label:"実践ログ"},
+  {id:"weekly", label:"週報"},
+  {id:"daily", label:"日報"},
+  {id:"sheet", label:"ビジネス設計書"},
+  {id:"data", label:"データ"},
+  {id:"help", label:"使い方"},
+];
+let currentTab = "home";
+let currentStep = null;
+
+function renderNav(){
+  document.getElementById("nav").innerHTML = TABS.map(t=>
+    `<button class="${t.id===currentTab?"active":""}" onclick="go('${t.id}')">${t.label}</button>`).join("");
+}
+function go(tab){ currentTab = tab; currentStep = null; render(); window.scrollTo(0,0); }
+function openStep(id){ currentTab = "work"; currentStep = id; render(); window.scrollTo(0,0); }
+
+function render(){
+  renderNav();
+  document.getElementById("studentName").value = data.student.name || "";
+  const m = document.getElementById("main");
+  if(currentTab==="home") m.innerHTML = viewHome();
+  else if(currentTab==="work") m.innerHTML = currentStep? viewStep(currentStep) : viewStepList();
+  else if(currentTab==="practice") m.innerHTML = viewPractice();
+  else if(currentTab==="weekly") m.innerHTML = viewWeekly();
+  else if(currentTab==="daily") m.innerHTML = viewDaily();
+  else if(currentTab==="sheet") m.innerHTML = viewSheet();
+  else if(currentTab==="data") m.innerHTML = viewData();
+  else m.innerHTML = viewHelp();
+}
+
+function viewHome(){
+  const stuck = STEPS.filter(s=>stepStatus(s.id)==="stuck");
+  const next = STEPS.find(s=>stepStatus(s.id)!=="done");
+  return `
+  <div class="card">
+    <h2>全体の進捗: ${overallProgress()}%</h2>
+    <div class="bar"><span style="width:${overallProgress()}%"></span></div>
+    <p class="muted" style="margin-top:6px">進捗の基準は「聞いた」ではなく「作った・動いた・反応を得た」。完了は各STEPの“完了の定義”を満たしたときです。</p>
+  </div>
+  ${PHASES.map(p=>`
+    <div class="card">
+      <h3 style="margin-top:0">${p.name}（${phaseProgress(p)}%）</h3>
+      <div class="bar"><span style="width:${phaseProgress(p)}%"></span></div>
+      <div style="margin-top:10px">${p.steps.map(id=>{
+        const s = STEPS.find(x=>x.id===id); const st = STATUSES.find(x=>x.v===stepStatus(id));
+        return `<div class="step-row" onclick="openStep('${id}')"><span class="step-no">${s.no}</span><span class="step-t">${s.title}</span><span class="chip ${st.cls}">${st.label}</span></div>`;
+      }).join("")}</div>
+    </div>`).join("")}
+  <div class="card">
+    <h3 style="margin-top:0">今やること</h3>
+    ${stuck.length? `<p>⚠️ 「困っている」STEPがあります: ${stuck.map(s=>s.no).join("、")} — 遠慮なくグループチャットか15分レスキューで相談してください。</p>`:""}
+    ${next? `<p>次のSTEP: <b>${next.no} ${next.title}</b> → <button class="btn gold" onclick="openStep('${next.id}')">開く</button></p>` : `<p>🎉 全STEP完了！「ビジネス設計書」タブから書き出して、卒業判定に進みましょう。</p>`}
+    <p class="muted">実践ログ: ${data.practice.length}件（卒業基準: 3件・最低1件）</p>
+    <p style="margin-top:6px">今週の週報（締切 ${mdLabel(weekEndOf(new Date()))}(日) 23:59）:
+      ${ (getWeekly(weekEndOf(new Date()))||{}).submitted
+        ? '<span class="chip st-done">提出済み</span>'
+        : `<span class="chip st-todo">未提出</span> <button class="btn gold" onclick="go('weekly')">書く</button>` }</p>
+    ${dailyStreak()>0? `<p class="muted">日報: 連続${dailyStreak()}日継続中！</p>`:""}
+  </div>`;
+}
+
+function viewStepList(){
+  return `<div class="notice">STEPを選んで入力してください。書きかけでOK。入力は自動保存されます。</div>` +
+    PHASES.map(p=>`<div class="phase-title">${p.name}</div>` + p.steps.map(id=>{
+      const s = STEPS.find(x=>x.id===id); const st = STATUSES.find(x=>x.v===stepStatus(id));
+      return `<div class="step-row" onclick="openStep('${id}')"><span class="step-no">${s.no}</span><span class="step-t">${s.title}<div class="muted">${s.goal}</div></span><span class="chip ${st.cls}">${st.label}</span></div>`;
+    }).join("")).join("");
+}
+
+function viewStep(id){
+  const s = STEPS.find(x=>x.id===id);
+  const d = data.steps[id];
+  return `
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <h2>${s.no}｜${s.title}</h2>
+      <button class="btn sec" onclick="go('work')">← 一覧へ</button>
+    </div>
+    <div class="goalbox"><b>ゴール:</b> ${s.goal}<br><b>完了の定義:</b> ${s.done}</div>
+    <label>状態</label>
+    <select onchange="setStatus('${id}', this.value)">
+      ${STATUSES.map(st=>`<option value="${st.v}" ${d.status===st.v?"selected":""}>${st.label}</option>`).join("")}
+    </select>
+    ${s.fields.map(fl=>{
+      const v = esc(d.fields[fl.k]||"");
+      return `<label>${fl.l}</label>` + (fl.t==="tx"
+        ? `<input type="text" value="${v}" placeholder="${esc(fl.ph)}" oninput="setField('${id}','${fl.k}',this.value)">`
+        : `<textarea placeholder="${esc(fl.ph)}" oninput="setField('${id}','${fl.k}',this.value)">${v}</textarea>`);
+    }).join("")}
+    <label>メモ・質問したいこと</label>
+    <textarea oninput="setMemo('${id}',this.value)">${esc(d.memo||"")}</textarea>
+    <p class="muted">最終更新: ${d.updatedAt? new Date(d.updatedAt).toLocaleString("ja-JP") : "未入力"}</p>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" onclick="copyStep('${id}')">このSTEPを提出用テキストでコピー</button>
+      ${id==="s11"? `<button class="btn gold" onclick="go('practice')">実践ログを書く</button>`:""}
+    </div>
+  </div>`;
+}
+
+function setStatus(id,v){ data.steps[id].status=v; touch(id); save(); renderNav(); }
+function setField(id,k,v){ data.steps[id].fields[k]=v; touch(id); save(); }
+function setMemo(id,v){ data.steps[id].memo=v; touch(id); save(); }
+
+function viewPractice(){
+  const rows = data.practice.map((p,i)=>`
+    <tr>
+      <td>${esc(p.date)}</td><td>${esc(p.action)}</td><td>${esc(p.target)}</td>
+      <td>${esc(p.reaction)}</td><td>${esc(p.learning)}</td><td>${esc(p.next)}</td>
+      <td class="no-print"><button class="btn warn" onclick="delPractice(${i})">削除</button></td>
+    </tr>`).join("");
+  return `
+  <div class="card">
+    <h2>実践ログ（行動と反応の記録）</h2>
+    <p class="muted">体験セッション・募集・発信など「市場に触れた行動」を記録します。卒業基準: 実践3件（最低1件）＋顧客の声1件。</p>
+    <h3>新しい記録を追加</h3>
+    <label>日付</label><input type="date" id="pr_date">
+    <label>やったこと（行動）</label><input type="text" id="pr_action" placeholder="例）体験セッション1件実施／モニター募集をInstagramに投稿">
+    <label>相手・場所</label><input type="text" id="pr_target" placeholder="例）知人の紹介・30代女性">
+    <label>相手の反応（そのままの言葉で）</label><textarea id="pr_reaction" placeholder="例）「頭の中が整理されました」と言われた／いいね3件・申込0"></textarea>
+    <label>気づき・学び</label><textarea id="pr_learning"></textarea>
+    <label>次の一手</label><input type="text" id="pr_next" placeholder="例）案内の言葉を変えてもう1件">
+    <div style="margin-top:10px"><button class="btn" onclick="addPractice()">追加する</button></div>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">記録一覧（${data.practice.length}件）</h3>
+    <div style="overflow-x:auto">
+    <table><tr><th>日付</th><th>行動</th><th>相手</th><th>反応</th><th>学び</th><th>次の一手</th><th class="no-print"></th></tr>
+    ${rows || `<tr><td colspan="7" class="empty">まだ記録がありません</td></tr>`}</table></div>
+  </div>`;
+}
+function addPractice(){
+  const g = id=>document.getElementById(id).value.trim();
+  if(!g("pr_action")){ alert("「やったこと」を入力してください"); return; }
+  data.practice.push({date:g("pr_date"), action:g("pr_action"), target:g("pr_target"),
+    reaction:g("pr_reaction"), learning:g("pr_learning"), next:g("pr_next"), createdAt:new Date().toISOString()});
+  save(); render();
+}
+function delPractice(i){ if(confirm("この記録を削除しますか？")){ data.practice.splice(i,1); save(); render(); } }
+
+/* ================= 週報（毎週日曜23:59締切）＝講師用管理画面と共通ロジック ================= */
+const YOUBI = ["日","月","火","水","木","金","土"];
+function toYMD(d){ const p=n=>String(n).padStart(2,"0"); return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
+function mdLabel(ymd){ const a=ymd.split("-"); return Number(a[1])+"/"+Number(a[2]); }
+function weekEndOf(d){ const x=new Date(d); const day=x.getDay(); if(day!==0) x.setDate(x.getDate()+(7-day)); return toYMD(x); } // その週の日曜（週は月曜はじまり）
+function weekStartLabel(weekEnd){ const x=new Date(weekEnd+"T12:00:00"); x.setDate(x.getDate()-6); return mdLabel(toYMD(x)); }
+function isLateSubmit(e){ return !!e.submittedAt && new Date(e.submittedAt).getTime() > new Date(e.weekEnd+"T23:59:59").getTime(); }
+function getWeekly(we){ return data.weekly.find(x=>x.weekEnd===we); }
+function getOrCreateWeekly(we){
+  let e = getWeekly(we);
+  if(!e){ e = {weekEnd:we, done:"", results:"", learning:"", stuck:"", nextWeek:"", submitted:false, submittedAt:null, updatedAt:null}; data.weekly.push(e); }
+  return e;
+}
+let weeklySel = null;
+function viewWeekly(){
+  const thisWe = weekEndOf(new Date());
+  const x = new Date(thisWe+"T12:00:00"); x.setDate(x.getDate()-7);
+  const lastWe = toYMD(x);
+  if(!weeklySel) weeklySel = thisWe;
+  const e = getWeekly(weeklySel) || {weekEnd:weeklySel, done:"",results:"",learning:"",stuck:"",nextWeek:"",submitted:false};
+  const stChip = e.submitted ? (isLateSubmit(e)? `<span class="chip st-wip">遅れて提出</span>` : `<span class="chip st-done">提出済み</span>`) : `<span class="chip st-todo">未提出</span>`;
+  const list = data.weekly.slice().sort((a,b)=>a.weekEnd<b.weekEnd?1:-1).map(w=>{
+    const chip = w.submitted ? (isLateSubmit(w)? `<span class="chip st-wip">遅れて提出</span>`:`<span class="chip st-done">提出済み</span>`) : `<span class="chip ${new Date(w.weekEnd+"T23:59:59")<new Date()? "st-stuck":"st-todo"}">未提出</span>`;
+    return `<div class="step-row" onclick="openWeekly('${w.weekEnd}')"><span class="step-no">〜${mdLabel(w.weekEnd)}</span><span class="step-t">${esc((w.done||"").slice(0,28))||"（未記入）"}</span>${chip}</div>`;
+  }).join("") || `<p class="muted">まだ週報がありません</p>`;
+  const fields = [
+    ["done","① 今週やったこと","例）STEP5の商品設計を完成／知人2人に商品案ヒアリング"],
+    ["results","② 成果・数字・お客様の反応","例）「受けたい」と1人／投稿2本・いいね12"],
+    ["learning","③ 気づき・学び",""],
+    ["stuck","④ 困っていること・相談したいこと","遠慮なくどうぞ。講師はこの欄を最優先で読みます"],
+    ["nextWeek","⑤ 来週やること","例）募集文を公開する"]];
+  return `
+  <div class="card">
+    <h2>週報 ${stChip}</h2>
+    <p class="muted">締切は<b>毎週日曜 23:59</b>。5項目・各1〜3行でOK。書いたら「提出する」→「コピー」してチャットに貼ってください（JSON書き出しの送付でも可）。提出後も編集できます。</p>
+    <label>対象の週</label>
+    <select onchange="weeklySel=this.value; render()">
+      <option value="${thisWe}" ${weeklySel===thisWe?"selected":""}>今週（${weekStartLabel(thisWe)}〜${mdLabel(thisWe)}・締切 ${mdLabel(thisWe)}(日)）</option>
+      <option value="${lastWe}" ${weeklySel===lastWe?"selected":""}>先週（${weekStartLabel(lastWe)}〜${mdLabel(lastWe)}）</option>
+      ${(weeklySel!==thisWe&&weeklySel!==lastWe)?`<option value="${weeklySel}" selected>〜${mdLabel(weeklySel)}の週</option>`:""}
+    </select>
+    ${fields.map(f=>`<label>${f[1]}</label><textarea placeholder="${esc(f[2])}" oninput="setWeekly('${weeklySel}','${f[0]}',this.value)">${esc(e[f[0]]||"")}</textarea>`).join("")}
+    <div class="row" style="margin-top:10px">
+      <button class="btn gold" onclick="submitWeekly('${weeklySel}')">${e.submitted?"提出済み（内容を更新して再提出）":"提出する"}</button>
+      <button class="btn" onclick="copyWeekly('${weeklySel}')">週報をコピー（チャット貼り付け用）</button>
+    </div>
+  </div>
+  <div class="card"><h3 style="margin-top:0">過去の週報</h3>${list}</div>`;
+}
+function openWeekly(we){ weeklySel = we; currentTab = "weekly"; currentStep = null; render(); window.scrollTo(0,0); }
+function setWeekly(we,k,v){ const e=getOrCreateWeekly(we); e[k]=v; e.updatedAt=new Date().toISOString(); save(); }
+function submitWeekly(we){
+  const e=getOrCreateWeekly(we);
+  if(!(e.done||e.results||e.learning||e.stuck||e.nextWeek)){ alert("内容をどれか1つは書いてから提出してください"); return; }
+  if(!e.submitted){ e.submitted=true; e.submittedAt=new Date().toISOString(); } // 初回提出時刻で期限内/遅れを判定
+  e.updatedAt=new Date().toISOString(); save(); render();
+  alert("提出済みにしました。\n「週報をコピー」してチャットに貼るか、データタブのJSON書き出しを送ってください。");
+}
+function copyWeekly(we){
+  const e=getOrCreateWeekly(we);
+  const t=`【週報】${data.student.name||"名前未入力"}（${weekStartLabel(we)}〜${mdLabel(we)}）\n`+
+    `■今週やったこと\n${e.done||"（未記入）"}\n■成果・数字・お客様の反応\n${e.results||"（未記入）"}\n`+
+    `■気づき・学び\n${e.learning||"（未記入）"}\n■困っていること・相談\n${e.stuck||"特になし"}\n■来週やること\n${e.nextWeek||"（未記入）"}`;
+  copyText(t);
+}
+
+/* ================= 日報（任意）＝共有はグループチャットに投稿する運用 ================= */
+function dailyStreak(){
+  const days=new Set(data.daily.map(e=>e.date));
+  let n=0; const d=new Date();
+  if(!days.has(toYMD(d))) d.setDate(d.getDate()-1);
+  while(days.has(toYMD(d))){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+function viewDaily(){
+  const streak=dailyStreak();
+  const list=data.daily.slice().sort((a,b)=>a.date<b.date?1:-1).slice(0,30).map(e=>{
+    const idx=data.daily.indexOf(e);
+    const yb=YOUBI[new Date(e.date+"T12:00:00").getDay()];
+    return `<tr><td style="white-space:nowrap">${mdLabel(e.date)}(${yb})</td><td class="sheet-val">${esc(e.content)}</td>
+      <td class="no-print" style="white-space:nowrap"><button class="btn sec" onclick="copyDaily(${idx})">コピー</button> <button class="btn warn" onclick="delDaily(${idx})">削除</button></td></tr>`;
+  }).join("");
+  return `
+  <div class="card">
+    <h2>日報（任意）${streak>0?` <span class="chip st-done">連続${streak}日</span>`:""}</h2>
+    <p class="muted">やりたい人だけでOK。書いたら「保存してコピー」→<b>グループチャットに投稿</b>してください。全員の日報が見られる場所はグループチャットです（お互いの刺激になります）。3行で十分。</p>
+    <label>日付</label><input type="date" id="dl_date" value="${toYMD(new Date())}">
+    <label>今日の記録</label><textarea id="dl_content" placeholder="①今日やったこと&#10;②気づき&#10;③明日やること"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="btn" onclick="addDaily(true)">保存してコピー（チャット投稿用）</button>
+      <button class="btn sec" onclick="addDaily(false)">保存のみ</button>
+    </div>
+  </div>
+  <div class="card"><h3 style="margin-top:0">これまでの日報（直近30件）</h3>
+    <div style="overflow-x:auto"><table><tr><th>日付</th><th>内容</th><th class="no-print"></th></tr>${list||`<tr><td colspan="3" class="empty">まだ記録がありません</td></tr>`}</table></div></div>`;
+}
+function addDaily(andCopy){
+  const date=document.getElementById("dl_date").value||toYMD(new Date());
+  const content=document.getElementById("dl_content").value.trim();
+  if(!content){ alert("内容を入力してください"); return; }
+  data.daily.push({date, content, createdAt:new Date().toISOString()}); save();
+  if(andCopy){ const yb=YOUBI[new Date(date+"T12:00:00").getDay()];
+    copyText(`【日報】${mdLabel(date)}(${yb}) ${data.student.name||"名前未入力"}\n${content}`); }
+  render();
+}
+function copyDaily(idx){ const e=data.daily[idx]; const yb=YOUBI[new Date(e.date+"T12:00:00").getDay()];
+  copyText(`【日報】${mdLabel(e.date)}(${yb}) ${data.student.name||"名前未入力"}\n${e.content}`); }
+function delDaily(idx){ if(confirm("この日報を削除しますか？")){ data.daily.splice(idx,1); save(); render(); } }
+
+function viewSheet(){
+  const sec = STEPS.map(s=>{
+    const d = data.steps[s.id];
+    const body = s.fields.map(fl=>{
+      const v = d.fields[fl.k];
+      return `<p><b>${fl.l}:</b><br><span class="sheet-val ${v?"":"empty"}">${v?esc(v):"（未記入）"}</span></p>`;
+    }).join("");
+    return `<div class="sheet-sec"><h4>${s.no}｜${s.title}</h4>${body}</div>`;
+  }).join("");
+  const pr = data.practice.length
+    ? `<table><tr><th>日付</th><th>行動</th><th>反応</th><th>学び</th></tr>${data.practice.map(p=>`<tr><td>${esc(p.date)}</td><td>${esc(p.action)}</td><td>${esc(p.reaction)}</td><td>${esc(p.learning)}</td></tr>`).join("")}</table>`
+    : `<p class="empty">（実践記録なし）</p>`;
+  return `
+  <div class="card no-print">
+    <div class="row" style="justify-content:space-between">
+      <h2>ビジネス設計書（自動生成）</h2>
+      <div><button class="btn" onclick="window.print()">印刷 / PDF保存</button>
+      <button class="btn sec" onclick="copyAll()">全体を提出用テキストでコピー</button></div>
+    </div>
+    <p class="muted">全STEPの入力が、そのまま「あなたのビジネス設計書」になります。印刷→PDF保存で完成版を保管できます。</p>
+  </div>
+  <div class="card">
+    <h2>${esc(data.student.name)||"（名前未入力）"}さんの ビジネス設計書</h2>
+    <p class="muted">“売れる強み”実装プログラム ${esc(data.student.cohort)}｜出力日: ${new Date().toLocaleDateString("ja-JP")}</p>
+    ${sec}
+    <div class="sheet-sec"><h4>実践の記録</h4>${pr}</div>
+  </div>`;
+}
+
+/* ================= 提出用テキスト・書き出し ================= */
+function stepText(s){
+  const d = data.steps[s.id];
+  const st = STATUSES.find(x=>x.v===d.status).label;
+  let t = `■${s.no} ${s.title}【${st}】\n`;
+  s.fields.forEach(fl=>{ t += `▼${fl.l}\n${d.fields[fl.k]||"（未記入）"}\n`; });
+  if(d.memo) t += `▼メモ・質問\n${d.memo}\n`;
+  return t;
+}
+function copyStep(id){
+  const s = STEPS.find(x=>x.id===id);
+  copyText(`【提出】${data.student.name||"名前未入力"}\n`+stepText(s));
+}
+function copyAll(){
+  let t = `【ビジネス設計書】${data.student.name||"名前未入力"}（${new Date().toLocaleDateString("ja-JP")}）\n\n`;
+  STEPS.forEach(s=>{ t += stepText(s)+"\n"; });
+  t += `■実践ログ（${data.practice.length}件）\n`;
+  data.practice.forEach(p=>{ t += `・${p.date} ${p.action}｜反応:${p.reaction}｜学び:${p.learning}\n`; });
+  copyText(t);
+}
+function copyText(t){
+  navigator.clipboard.writeText(t).then(()=>alert("コピーしました。チャットに貼り付けて提出できます。"),
+    ()=>{ prompt("コピーできませんでした。下のテキストを手動でコピーしてください", t); });
+}
+
+function viewData(){
+  return `
+  <div class="card">
+    <h2>データの管理</h2>
+    <h3>書き出し（バックアップ・提出）</h3>
+    <p class="muted">JSONファイルが保存されます。講師への提出・機種変更時のバックアップに使います。</p>
+    <button class="btn" onclick="exportJson()">JSONを書き出す</button>
+    <h3>読み込み（復元）</h3>
+    <p class="muted">書き出したJSONを選ぶと、今の内容が置き換わります。</p>
+    <input type="file" accept=".json,application/json" onchange="importJson(this)">
+    <h3>動作確認用ダミーデータ</h3>
+    <p class="muted">操作を試したいときに読み込めます（今の内容は消えます）。</p>
+    <button class="btn sec" onclick="loadDummy()">ダミーデータを読み込む</button>
+    <h3>全データ削除</h3>
+    <button class="btn warn" onclick="wipe()">この端末のデータを全部消す</button>
+  </div>`;
+}
+function exportJson(){
+  data.exportedAt = new Date().toISOString();
+  save();
+  const name = (data.student.name||"名前未入力").replace(/\s/g,"");
+  const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `ワークブック_${name}_${new Date().toISOString().slice(0,10)}.json`;
+  a.click(); URL.revokeObjectURL(a.href);
+}
+function importJson(input){
+  const file = input.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ()=>{
+    try{
+      const d = JSON.parse(r.result);
+      if(d.app!==APP_ID){ alert("このファイルはワークブックのデータではありません"); return; }
+      if(!confirm("今の内容を、このファイルの内容で置き換えます。よろしいですか？")) return;
+      localStorage.setItem(WB_KEY, JSON.stringify(d));
+      data = load(); render(); alert("読み込みました");
+    }catch(e){ alert("読み込みに失敗しました: "+e.message); }
+  };
+  r.readAsText(file); input.value="";
+}
+function wipe(){
+  if(confirm("本当に全データを削除しますか？（元に戻せません。先にJSON書き出しを推奨）")){
+    localStorage.removeItem(WB_KEY); data = emptyData(); render();
+  }
+}
+/* ダミーデータ（実在の人物・教材ではありません） */
+function loadDummy(){
+  if(!confirm("今の内容を消して、ダミーデータを読み込みます。よろしいですか？")) return;
+  const d = emptyData();
+  d.student.name = "サンプル 花子";
+  const set = (id, st, fields)=>{ d.steps[id].status=st; d.steps[id].fields=fields; d.steps[id].updatedAt=new Date(Date.now()-86400000*3).toISOString(); };
+  set("s1","done",{bun:"私は、働き方に迷う30代女性が「自分はこれでいい」と決められるまでを、思考の整理力×人事15年の経験で伴走できます",katagaki:"働き方迷子専門カウンセラー",sign:"・相談されると、つい紙に書いて整理してあげる\n・人の話の「本音」が気になる",keiken:"人事15年・離職相談500件",uri:"気にしすぎ → 小さな違和感を拾って本音を引き出す力"});
+  set("s2","done",{dare:"30代・会社員・このまま今の仕事でいいのか迷っている女性",nayami:"「辞めたい訳じゃないけど、このままでいいのかモヤモヤする」",risou:"自分の軸で「続ける／変える」を決められる状態",persona:"みさきさん(34)。営業職。口ぐせは「私、何がしたいんだろう」"});
+  set("s3","done",{dougyou:"キャリアコーチは「転職ありき」に見える",chigai:"辞めさせるコーチではなく「決められる自分」を作る伴走",riyuu:"①人事側の視点を持つ ②離職相談500件 ③整理の型がある"});
+  set("s4","done",{concept:"働き方に迷う30代女性を、「自分はこれでいい」と決められる状態へ、思考の整理×人事の知見で連れて行く"});
+  set("s5","wip",{mei:"じぶん軸キャリア整理プログラム(仮)",goal:"3か月で「決められる自分」になる",naiyou:"60分×6回・3か月",kakaku:"検討中(モニター3万円で開始予定)",keishiki:"Zoom個別＋LINE質問"});
+  set("s6","wip",{profile:"作成中…",copy:"「辞める？続ける？」の前に、やることがあります",hansei:""});
+  d.steps.s7.status="stuck"; d.steps.s7.fields={hashira:"迷い中…テーマが絞れない",pf:"Instagram",post5:"",koukai:""}; d.steps.s7.memo="3本柱の2本目が決まりません。次回相談したいです"; d.steps.s7.updatedAt=new Date(Date.now()-86400000*9).toISOString();
+  d.practice.push({date:"2026-10-05",action:"知人に商品案を見せて感想をもらった",target:"元同僚(32)",reaction:"「これ私のことだ、と思った」",learning:"ペルソナの言葉がそのまま刺さる",next:"体験セッションの募集文を作る",createdAt:new Date().toISOString()});
+  // 週報ダミー: 先週分を期限内提出済みにする
+  (function(){
+    const x=new Date(); const day=x.getDay(); if(day!==0) x.setDate(x.getDate()+(7-day)); x.setDate(x.getDate()-7);
+    const lastWe=toYMD(x);
+    d.weekly=[{weekEnd:lastWe, done:"STEP5の商品設計シートを作成。知人2人にヒアリング", results:"「これ私のことだ」と言われた", learning:"ペルソナの言葉がそのまま刺さる", stuck:"価格の決め方に迷っています", nextWeek:"募集文のたたき台を作る", submitted:true, submittedAt:new Date(lastWe+"T21:30:00").toISOString(), updatedAt:new Date(lastWe+"T21:30:00").toISOString()}];
+  })();
+  // 日報ダミー: 直近3日
+  d.daily=[1,2,3].map(n=>{ const x=new Date(Date.now()-n*86400000);
+    return {date:toYMD(x), content:"①ワーク30分 ②"+(n===1?"プロフィール文の下書きができた":"商品設計を見直した")+" ③明日も30分続ける", createdAt:x.toISOString()}; });
+  localStorage.setItem(WB_KEY, JSON.stringify(d));
+  data = load(); render(); alert("ダミーデータを読み込みました(「データ」タブからいつでも消せます)");
+}
+
+function viewHelp(){
+  return `
+  <div class="card">
+    <h2>使い方（はじめての方へ）</h2>
+    <h3>このワークブックは何？</h3>
+    <p>講座で作るものを1か所にためて、最後に「あなたのビジネス設計書」を完成させるノートです。ファイルを開くだけで使えます。</p>
+    <h3>基本の使い方（3つだけ）</h3>
+    <p>① 右上に<b>お名前</b>を入れる → ② 「ワーク」タブでSTEPを開いて書く（自動保存）→ ③ 提出のときは「このSTEPを提出用テキストでコピー」を押してチャットに貼る。</p>
+    <h3>週報と日報</h3>
+    <p><b>週報（毎週）:</b> 締切は日曜23:59。「週報」タブで5項目を書いて「提出する」→「コピー」してチャットに貼ってください。困っていることは正直に書くほどサポートが早くなります。<br>
+    <b>日報（任意）:</b> 書きたい人だけ。「保存してコピー」→グループチャットに投稿すると、全員で見られてお互いの刺激になります。</p>
+    <h3>状態の意味</h3>
+    <p>未着手／作成中／<b>完了</b>（各STEPの“完了の定義”を満たしたら）／<b>困っている</b>（正直に選んでOK。講師が気づいてサポートします）。</p>
+    <h3>大事な注意</h3>
+    <p>データは<b>この端末のこのブラウザだけ</b>に保存されます。別のパソコン・スマホには自動では移りません。週1回「データ」タブから<b>JSONを書き出して</b>保管してください（機種変更時はそのファイルを「読み込み」で復元）。</p>
+    <h3>よくある質問</h3>
+    <p><b>Q. 間違えて消してしまった</b> → 書き出したJSONがあれば「読み込み」で戻せます。<br>
+    <b>Q. スマホでも使える？</b> → 使えますが、長文入力はパソコンがおすすめ。<br>
+    <b>Q. きれいに書けない</b> → 60点で提出→添削で磨く、が講座のルールです。</p>
+  </div>`;
+}
+
+/* ================= 初期化 ================= */
+document.getElementById("studentName").addEventListener("input", e=>{ data.student.name = e.target.value; save(); });
+render();
+</script>
+</body>
+</html>
