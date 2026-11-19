@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@500;700;900&family=Zen+Maru+Gothic:wght@700;900&family=Inter:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FFF8EE;--ink:#1F2A44;--sub:#6B7385;--accent:#FF6B4A;--mark:#FFE066;--line:#E9DFCF;--row:#FFFFFF;--row2:#FFF3E2}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;background:var(--bg);font-family:"Noto Sans JP",sans-serif;color:var(--ink);overflow:hidden}
+body{background-image:radial-gradient(#EADFCB 1.6px,transparent 1.6px);background-size:36px 36px}
+.wrap{position:absolute;inset:0;padding:250px 64px 0}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.tag{background:var(--ink);color:#fff;font-weight:900;font-size:34px;padding:10px 26px;border-radius:999px;letter-spacing:.06em}
+.year{font-family:Inter;font-weight:800;font-size:34px;color:var(--accent);letter-spacing:.04em}
+h1{font-family:"Zen Maru Gothic";font-weight:900;font-size:104px;line-height:1.18;letter-spacing:-.01em}
+h1 .hl{background:linear-gradient(transparent 58%,var(--mark) 58%);padding:0 6px}
+h1 .ac{color:var(--accent)}
+.badge{position:absolute;right:70px;top:400px;width:230px;height:230px;border-radius:50%;background:var(--accent);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(8deg);box-shadow:0 8px 0 #D9502F;font-weight:900}
+.badge .s{font-size:34px}.badge .b{font-family:Inter;font-size:96px;line-height:1}.badge .b small{font-family:"Noto Sans JP";font-size:44px}
+.lead{font-size:36px;font-weight:700;color:var(--sub);margin:16px 0 30px}
+table{width:100%;border-collapse:separate;border-spacing:0;border-radius:28px;overflow:hidden;box-shadow:0 10px 0 var(--line);border:4px solid var(--ink);background:var(--row)}
+thead th{background:var(--ink);color:#fff;font-size:32px;font-weight:900;padding:16px 28px;text-align:left;letter-spacing:.08em}
+td{font-size:38px;font-weight:700;padding:0 28px;height:88px;border-top:2px dashed var(--line);white-space:nowrap}
+tbody tr:nth-child(even) td{background:var(--row2)}
+td.task{width:52%}
+td.task .n{display:inline-block;width:46px;height:46px;border-radius:50%;background:var(--accent);color:#fff;font-family:Inter;font-weight:800;font-size:26px;line-height:46px;text-align:center;margin-right:16px;vertical-align:4px}
+td.ai{font-family:Inter,"Noto Sans JP";font-weight:800;font-size:38px;color:var(--ink)}
+td.ai .arrow{color:var(--accent);margin-right:10px;font-weight:900}
+.foot{margin-top:34px;display:flex;align-items:center;justify-content:center;gap:18px;font-size:38px;font-weight:900}
+.foot .pill{background:var(--accent);color:#fff;padding:12px 30px;border-radius:999px}
+</style></head><body>
+<div class="wrap">
+  <div class="top"><span class="tag">保存版</span><span class="year">2026 EDITION</span></div>
+  <h1>この作業には<br><span class="hl">この<span class="ac">AI</span></span>一覧表</h1>
+  <div class="badge"><span class="s">作業別</span><span class="b">10<small>選</small></span></div>
+  <p class="lead">もう迷わない！やりたいこと別 AIの使い分け</p>
+  <table>
+    <thead><tr><th>やりたいこと</th><th>おすすめAI</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="foot"><span>迷ったらこれ見て</span><span class="pill">保存してね ▶</span></div>
+</div>
+<script>
+// ★ ここをリールの内容に合わせて書き換えてください
+const ROWS = [
+  ["文章作成・添削",   "ChatGPT / Claude"],
+  ["調べもの",         "Perplexity"],
+  ["資料の要約",       "NotebookLM"],
+  ["スライド作成",     "Gamma"],
+  ["画像生成",         "ChatGPT / Midjourney"],
+  ["デザイン・バナー", "Canva"],
+  ["動画編集・字幕",   "CapCut / Vrew"],
+  ["議事録・文字起こし","Notta"],
+  ["プログラミング",   "Claude / Cursor"],
+  ["Google連携の作業", "Gemini"],
+];
+document.getElementById('rows').innerHTML = ROWS.map((r,i)=>
+  `<tr><td class="task"><span class="n">${i+1}</span>${r[0]}</td><td class="ai"><span class="arrow">→</span>${r[1]}</td></tr>`).join('');
+</script>
+</body></html>
