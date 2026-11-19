@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@700;900&family=Inter:wght@800;900&display=swap" rel="stylesheet">
+<style>
+:root{--blue:#2F3BFF;--blue2:#1C22C9;--navy:#0B0F3A;--yellow:#FFE600;--white:#fff;--sub:#5B6280}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden;font-family:"Noto Sans JP",sans-serif}
+body{background:
+  linear-gradient(rgba(255,255,255,.07) 2px,transparent 2px) 0 0/60px 60px,
+  linear-gradient(90deg,rgba(255,255,255,.07) 2px,transparent 2px) 0 0/60px 60px,
+  radial-gradient(120% 70% at 20% 20%,#4A55FF 0%,var(--blue) 45%,var(--blue2) 100%)}
+/* 安全エリア：y 300〜1620（3:4 と 4:5 のどちらで切り抜かれても文字が残る範囲） */
+.safe{position:absolute;left:60px;right:60px;top:300px;height:1320px}
+.top{display:flex;gap:16px;align-items:center}
+.pill{font-weight:900;font-size:36px;padding:8px 26px;border-radius:999px;background:var(--yellow);color:var(--navy);letter-spacing:.06em}
+.pill.o{background:transparent;color:#fff;border:3px solid rgba(255,255,255,.7);font-family:Inter;font-weight:800}
+h1{margin-top:26px;color:#fff;font-weight:900;font-size:150px;line-height:1.08;letter-spacing:-.04em}
+h1 .y{color:var(--yellow)}
+h1 .box{display:inline-block;background:var(--yellow);color:var(--navy);padding:0 22px 6px;border-radius:18px;transform:rotate(-2deg);margin-top:14px;box-shadow:10px 10px 0 var(--navy)}
+.badge{position:absolute;right:-6px;top:300px;width:250px;height:250px;border-radius:50%;background:#FF3D6E;color:#fff;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(10deg);box-shadow:8px 8px 0 var(--navy);border:6px solid #fff;z-index:3}
+.badge .s{font-weight:900;font-size:36px;margin-bottom:-6px}
+.badge .b{font-family:Inter;font-weight:900;font-size:120px;line-height:1}
+.badge .b small{font-family:"Noto Sans JP";font-size:50px;font-weight:900}
+.card{position:absolute;left:0;right:0;top:640px;background:#fff;border-radius:36px;box-shadow:16px 16px 0 var(--navy);overflow:hidden;transform:rotate(-1deg)}
+.card .hd{display:flex;background:var(--navy);color:#fff;font-weight:900;font-size:30px;padding:16px 34px;letter-spacing:.1em}
+.card .hd span:first-child{width:50%}
+.row{display:flex;align-items:center;height:92px;padding:0 34px;border-top:3px solid #EEF0F8}
+.row:nth-child(odd){background:#F5F6FF}
+.task{width:50%;font-weight:900;font-size:44px;color:var(--navy);letter-spacing:-.02em}
+.ai{display:flex;gap:10px}
+.chip{font-family:Inter,"Noto Sans JP";font-weight:900;font-size:36px;color:#fff;padding:6px 22px;border-radius:14px;letter-spacing:-.01em}
+.more{height:84px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:36px;color:var(--sub);
+  border-top:3px dashed #DDE0EE}
+.more b{color:var(--blue);font-family:Inter;font-size:40px;margin:0 2px}
+.deco{position:absolute;left:-20px;right:-20px;font-family:Inter;font-weight:900;font-size:150px;line-height:1;color:transparent;-webkit-text-stroke:3px rgba(255,255,255,.22);white-space:nowrap;letter-spacing:-.02em}
+</style></head><body>
+<div class="deco" style="top:90px">AI CHEAT SHEET</div><div class="deco" style="top:1690px">AI CHEAT SHEET</div>
+<div class="safe">
+  <div class="top"><span class="pill">保存版</span><span class="pill o">2026</span></div>
+  <h1>作業別<br><span class="y">AI</span>使い分け<br><span class="box">一覧表</span></h1>
+  <div class="badge"><span class="s">全部で</span><span class="b">10<small>選</small></span></div>
+  <div class="card">
+    <div class="hd"><span>やりたいこと</span><span>おすすめAI</span></div>
+    <div id="rows"></div>
+    <div class="more"><span>＋ほか<b>5</b>つは中身でチェック ▶</span></div>
+  </div>
+</div>
+<script>
+// ★ リールの内容に合わせて書き換え（カバーに出すのは上から5つ）
+const ROWS = [
+  ["文章を書く",   [["ChatGPT","#10A37F"],["Claude","#D97757"]]],
+  ["調べもの",     [["Perplexity","#1F8A9E"]]],
+  ["資料の要約",   [["NotebookLM","#4A4A4A"]]],
+  ["スライド作成", [["Gamma","#7B3FF2"]]],
+  ["画像をつくる", [["Midjourney","#222"]]],
+];
+document.getElementById('rows').innerHTML = ROWS.map(r=>
+  `<div class="row"><span class="task">${r[0]}</span><span class="ai">${r[1].map(c=>`<span class="chip" style="background:${c[1]}">${c[0]}</span>`).join('')}</span></div>`).join('');
+</script>
+</body></html>
