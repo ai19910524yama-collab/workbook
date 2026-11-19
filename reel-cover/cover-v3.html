@@ -26,12 +26,13 @@ h1 .g{background:linear-gradient(180deg,#E9BE55 0%,#C48E2C 55%,#8F5F1A 100%);-we
 .row:last-child{border-bottom:none}
 .num{font-family:"Cormorant Garamond";font-style:italic;font-size:54px;color:var(--mocha);width:58px}
 .task{flex:1;min-width:0}
-.task b{display:block;font-weight:900;font-size:40px;line-height:1.2;letter-spacing:.01em}
+.task b{display:block;font-weight:900;font-size:44px;line-height:1.2;letter-spacing:.01em}
 .task small{display:block;font-weight:500;font-size:24px;color:var(--sub);margin-top:4px;white-space:nowrap}
 .tool{display:flex;align-items:center;gap:18px;width:380px}
 .ico{width:88px;height:88px;border-radius:22px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;
   box-shadow:0 6px 18px rgba(110,75,40,.18),0 0 0 2px #F1E8DC}
-.ico img{width:56px;height:56px}
+.ico img{width:60px;height:60px}
+.ico.full{background:none;overflow:hidden}.ico.full img{width:88px;height:88px}
 .ico.tbd{background:#F3ECE3;border:3px dashed var(--mocha);box-shadow:none;font:900 40px "Zen Kaku Gothic New";color:var(--mocha)}
 .ico .gm{font:900 19px/1 "Zen Kaku Gothic New";letter-spacing:.06em;color:#3A47D5}
 .name{font-weight:900;font-size:38px;line-height:1.1;letter-spacing:-.01em}
@@ -48,7 +49,7 @@ h1 .g{background:linear-gradient(180deg,#E9BE55 0%,#C48E2C 55%,#8F5F1A 100%);-we
 <div class="head">
   <div class="eyebrow">AI cheat sheet</div>
   <h1>作業別<br><span class="g">AI使い分け</span></h1>
-  <div class="tag">迷ったらこれ見て・全8選</div>
+  <div class="tag">保存版 ｜ 全8選</div>
 </div>
 
 <div class="sheet">
@@ -60,16 +61,16 @@ h1 .g{background:linear-gradient(180deg,#E9BE55 0%,#C48E2C 55%,#8F5F1A 100%);-we
 <script>
 // ★ [作業, ひとこと, AI名, AIの補足, アイコン]  アイコン: 'icons/xxx.svg' / 'GAMMA'(文字) / '?'(未確定)
 const ROWS = [
-  ["日常の相談・調べもの", "とりあえず聞くならここ",   "ChatGPT",    "OpenAI",        "icons/chatgpt.svg"],
-  ["文章・長文の作成",     "ブログ・台本・企画書",     "Claude",     "Anthropic",     "icons/claude.svg"],
-  ["画像の生成・編集",     "写真の加工やサムネに",     "Nano Banana","Gemini",        "icons/nanobanana.svg"],
-  ["スライド作成",         "資料を一瞬でデザイン",     "Gamma",      "",              "GAMMA"],
-  ["資料の要約・勉強",     "PDFや動画をまとめる",      "NotebookLM", "Google",        "icons/notebooklm.svg"],
-  ["（確認中）",           "",                         "？？？",     "",              "?"],
-  ["（確認中）",           "",                         "？？？",     "",              "?"],
-  ["動画編集",             "",                         "？？？",     "",              "?"],
+  ["とりあえず聞きたい", "", "ChatGPT",     "チャットジーピーティー", "icons/chatgpt.svg"],
+  ["会議の文字起こし",   "", "Notta",       "ノッタ",                 "icons/notta.svg"],
+  ["長い資料の要約",     "", "NotebookLM",  "ノートブックエルエム",   "icons/notebooklm.svg"],
+  ["メールの文章",       "", "Claude",      "クロード",               "icons/claude.svg"],
+  ["文章を図に",         "", "Napkin AI",   "ナプキンエーアイ",       "icons/napkin.svg"],
+  ["スライド作り",       "", "Gamma",       "ガンマ",                 "icons/gamma.svg"],
+  ["写真の背景チェンジ", "", "Nano Banana", "ナノバナナ",             "icons/nanobanana.svg"],
+  ["動画作り",           "", "MUSE",        "ミューズ",               "icons/muse.svg"],
 ];
-const ico = s => s==='?' ? '<div class="ico tbd">?</div>' : s==='GAMMA' ? '<div class="ico"><span class="gm">GAMMA</span></div>' : `<div class="ico"><img src="${s}"></div>`;
+const ico = s => s==='?' ? '<div class="ico tbd">?</div>' : s==='GAMMA' ? '<div class="ico"><span class="gm">GAMMA</span></div>' : (/notta|napkin/.test(s)?`<div class="ico full"><img src="${s}"></div>`:/gamma/.test(s)?`<div class="ico"><img src="${s}" style="width:84px;height:84px"></div>`:`<div class="ico"><img src="${s}"></div>`);
 document.getElementById('rows').innerHTML = ROWS.map((r,i)=>`
   <div class="row"><span class="num">${String(i+1).padStart(2,'0')}</span>
    <div class="task"><b>${r[0]}</b>${r[1]?`<small>${r[1]}</small>`:''}</div>
