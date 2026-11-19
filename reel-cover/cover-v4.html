@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&family=Zen+Kaku+Gothic+New:wght@700;900&family=Inter:wght@800;900&display=swap" rel="stylesheet">
+<style>
+:root{--esp:#2A1D15;--esp2:#4A3426;--cream:#FFF8EC;--gold1:#FFE7A3;--gold2:#E8B44C;--gold3:#B27A22;--ink:#1E1611}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1080px;height:1920px;overflow:hidden}
+body{font-family:"Zen Kaku Gothic New",sans-serif;color:var(--ink);
+ background:radial-gradient(700px 520px at 85% 8%,rgba(255,190,110,.38),transparent 70%),
+            radial-gradient(600px 600px at 5% 40%,rgba(255,170,90,.16),transparent 70%),
+            linear-gradient(180deg,#3B2A1F 0%,var(--esp) 60%,#1F150F 100%)}
+.spark{position:absolute;color:#FFE9B8;text-shadow:0 0 22px rgba(255,210,140,.9)}
+.head{position:absolute;left:0;right:0;top:256px;text-align:center}
+.pill{display:inline-block;font-weight:900;font-size:40px;letter-spacing:.06em;color:var(--esp);background:linear-gradient(180deg,var(--gold1),var(--gold2));padding:10px 38px;border-radius:999px}
+.t1{font-family:"Shippori Mincho B1";font-weight:800;font-size:104px;line-height:1.1;color:var(--cream);margin-top:16px;letter-spacing:.02em}
+.t2{font-family:"Shippori Mincho B1";font-weight:800;font-size:196px;line-height:1;letter-spacing:.06em;margin-top:2px;
+  background:linear-gradient(180deg,#FFF3CF 0%,var(--gold2) 55%,var(--gold3) 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.45))}
+.sheet{position:absolute;left:44px;right:44px;top:712px;background:var(--cream);border-radius:40px;padding:14px 30px;box-shadow:0 26px 60px rgba(0,0,0,.45)}
+.row{display:flex;align-items:center;height:114px;border-bottom:3px solid #EFE3D2}
+.row:last-child{border-bottom:none}
+.task{width:388px;flex:none;display:flex;align-items:center}
+.task span{display:inline-block;color:#fff;font-weight:900;font-size:36px;line-height:1;padding:14px 20px;border-radius:14px;letter-spacing:.01em;white-space:nowrap}
+.arw{width:56px;flex:none;color:#8A6A4A;font-family:Inter;font-weight:900;font-size:44px;text-align:center}
+.ico{width:92px;height:92px;border-radius:22px;flex:none;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 10px rgba(60,35,15,.25)}
+.ico img{width:56px;height:56px}
+.ico img.w{filter:brightness(0) invert(1)}
+.ico img.full{width:92px;height:92px}
+.name{margin-left:20px;font-family:Inter,"Zen Kaku Gothic New";font-weight:900;font-size:46px;letter-spacing:-.02em;white-space:nowrap}
+.foot{position:absolute;left:0;right:0;top:1712px;text-align:center;font-weight:900;font-size:36px;color:var(--gold1);letter-spacing:.1em}
+</style></head><body>
+<div class="spark" style="left:110px;top:230px;font-size:50px">✦</div>
+<div class="spark" style="right:120px;top:420px;font-size:40px">✦</div>
+<div class="spark" style="left:150px;top:560px;font-size:30px">✦</div>
+<div class="head">
+  <span class="pill">保存版 ｜ 作業別 全8選</span>
+  <div class="t1">AI使い分け</div>
+  <div class="t2">一覧表</div>
+</div>
+<div class="sheet" id="rows"></div>
+<div class="foot">保存して、迷ったときに見返してね</div>
+<script>
+// [作業, ラベル色, AI名, アイコン, アイコン背景, アイコン表示]  表示: w=白抜き / c=そのまま / full=タイル全面
+const ROWS = [
+  ["とりあえず聞きたい", "#2E8B57", "ChatGPT",     "icons/chatgpt.svg",     "#111111", "w"],
+  ["会議の文字起こし",   "#2F6FE0", "Notta",       "icons/notta.svg",       "#3B7CF2", "full"],
+  ["長い資料の要約",     "#6A4BC4", "NotebookLM",  "icons/notebooklm.svg",  "#111111", "w"],
+  ["メールの文章",       "#A0522D", "Claude",      "icons/claude.svg",      "#D97757", "w"],
+  ["文章を図に",         "#E0832A", "Napkin AI",   "icons/napkin.svg",      "#26262B", "full"],
+  ["スライド作り",       "#8E44C9", "Gamma",       "icons/gamma-white.svg", "#6C3BE0", "full"],
+  ["写真の背景チェンジ", "#B8860B", "Nano Banana", "icons/nanobanana.svg",  "#FFE36E", "c"],
+  ["動画作り",           "#B24C72", "MUSE",        "icons/muse.svg",        "#2B63E6", "w"],
+];
+document.getElementById('rows').innerHTML = ROWS.map(r=>`
+ <div class="row"><div class="task"><span style="background:${r[1]}">${r[0]}</span></div><div class="arw">→</div>
+  <div class="ico" style="background:${r[4]}"><img class="${r[5]}" src="${r[3]}"></div><div class="name">${r[2]}</div></div>`).join('');
+</script>
+</body></html>
